@@ -2,20 +2,104 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background-color: white;
+  font-family: "Roboto", sans-serif;
+}
+
+.nav {
+  padding: 0.5rem 1rem;
+  background: white;
+  border-bottom: 1px solid rgb(245, 244, 244);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Kanit', sans-serif;
+}
+
+.logo {
+  padding-left: 85px;
+  font-size: 3rem;
+  color: rgb(182, 34, 34);
+}
+
+.pdf-btn,
+.upload-btn {
+  border: none;
+  outline: none;
+  background: #4f4c5e;
+  color: white;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  margin-right: 1rem;
+  cursor: pointer;
+}
+
+.container {
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.image-preview {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.image-item {
+  margin: 1rem;
+  position: relative;
+}
+
+.delete-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: #f44336;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  padding: 0.3rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.delete-btn:hover {
+  background: #d32f2f;
+}
+
+/* Drop box styling */
+.drop-box {
+  border: 2px dashed #6a5858;
+  border-radius: 5px;
+  padding: 10rem;
+  text-align: center;
+  cursor: pointer;
+  margin-top: 2rem;
+  margin-left: 170px;
+  margin-right: 200px;
+}
+
+.drop-box:hover {
+  background-color: #f9f9f9;
+}
+
+.drop-text {
+  font-size: 1rem;
+  color: #888;
+}
+
+.drop-text:hover {
+  color: #555;
+}
+
+.pdf {
+  margin-left: 80px;
 }

@@ -1,101 +1,184 @@
-import Image from "next/image";
+"use client";
+
+import {useState} from "react";
+import {
+    DndContext,
+    closestCenter,
+    rectIntersection,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import './globals.css';
+import jsPDF from 'jspdf';
+import SortableItem from "@/components/SortableItems";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    const [images, setImages] = useState([]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    const sensors = useSensors(
+        useSensor(PointerSensor)
+    );
+
+    const handleFileChange = (event) => {
+        const files = Array.from(event.target.files);
+        const validFiles = files.filter(
+            (file) => file.type === "image/jpeg" || file.type === "image/jpg" || file.type === "image/png"
+        );
+
+        if (validFiles.length) {
+            setImages([...images, ...validFiles]);
+        } else {
+            alert("Please select valid JPG files.");
+        }
+    };
+
+    const handleRemoveImage = (id) => {
+        console.log(id);
+        setImages((prevImages) => prevImages.filter((image) => image.name !== id));
+    };
+
+    const handleDragEnd = (event) => {
+        const { active, over } = event;
+        if (active.id !== over.id) {
+            setImages((items) => {
+                const oldIndex = items.findIndex((item) => item.name === active.id);
+                const newIndex = items.findIndex((item) => item.name === over.id);
+                console.log(items, oldIndex, newIndex);
+                return arrayMove(items, oldIndex, newIndex);
+            });
+        }
+    };
+
+
+    const convertToPDF = async () => {
+        if (!images.length) {
+            alert("No images to convert!");
+            return;
+        }
+
+        const pdf = new jsPDF("landscape");
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        for (let i = 0; i < images.length; i++) {
+            const imageFile = images[i];
+            const imageData = await readFileAsDataURL(imageFile);
+
+            const img = new window.Image();
+            img.src = imageData;
+
+            await new Promise((resolve) => {
+                img.onload = () => {
+                    const imgRatio = img.width / img.height;
+                    const pageRatio = pageWidth / pageHeight;
+
+                    let imgWidth, imgHeight;
+
+                    if (imgRatio > pageRatio) {
+                        imgWidth = pageWidth;
+                        imgHeight = pageWidth / imgRatio;
+                    } else {
+                        imgHeight = pageHeight;
+                        imgWidth = pageHeight * imgRatio;
+                    }
+
+                    const xOffset = (pageWidth - imgWidth) / 2;
+                    const yOffset = (pageHeight - imgHeight) / 2;
+
+                    pdf.addImage(img, "JPEG", xOffset, yOffset, imgWidth, imgHeight);
+
+                    if (i < images.length - 1) {
+                        pdf.addPage();
+                    }
+
+                    resolve();
+                };
+            });
+        }
+
+        pdf.save("converted.pdf");
+    };
+
+    const readFileAsDataURL = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = (error) => reject(error);
+            reader.readAsDataURL(file);
+        });
+    };
+
+    return (
+        <>
+            <div className={"text-center pb-10"}>
+                <nav className={"bg-indigo-100 p-6 mb-2"}>Convert JPG Files to PDF</nav>
+                <input
+                    type="file"
+                    accept="image/jpeg, image/jpg, image/png"
+                    multiple
+                    onChange={handleFileChange}
+                />
+                <br/>
+                {images.length > 0 && (
+                    <div style={{marginTop: "20px"}}>
+                        <h3><b>Reorder Images</b> (Just Drag to the place where you want to place and drop it there!)</h3>
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <SortableContext
+                                items={images}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        gap: '10px',
+                                        alignItems: 'center',
+                                        justifyContent: "center",
+                                        border: '1px solid lightgray',
+                                        padding: '10px',
+                                        margin: '10px',
+                                    }}
+                                >
+                                    {images.map((image, index) => (
+                                        <SortableItem
+                                            key={`Image-${index}`}
+                                            id={`${image.name}`}
+                                            src={URL.createObjectURL(image)}
+                                            alt={`Image ${index + 1}`}
+                                            name={`${image.name}`}
+                                            onRemove={handleRemoveImage}
+                                        />
+                                    ))}
+                                </div>
+                            </SortableContext>
+                        </DndContext>
+                    </div>
+                )}
+                <button
+                    onClick={convertToPDF}
+                    style={{
+                        marginTop: "20px",
+                        padding: "10px 20px",
+                        cursor: "pointer",
+                        backgroundColor: "#007BFF",
+                        color: "#FFF",
+                        border: "none",
+                        borderRadius: "5px",
+                    }}
+                >
+                    Convert to PDF
+                </button>
+            </div>
+        </>
+    );
 }
